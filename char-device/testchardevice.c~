@@ -1,0 +1,17 @@
+/*		Programa para testar o LKM chardevice.c
+*		Baseado nos programas de Derek Molloy
+*		http://derekmolloy.ie/writing-a-linux-kernel-module-part-2-a-character-device/
+*		
+*		A Linux user space program that communicates with the ebbchar.c LKM. It passes a
+* 		string to the LKM and reads the response from the LKM. For this example to work the device
+* 		must be called /dev/ebbchar.
+*
+*		Autor: Giovanni Bauermeister
+*/
+
+
+#include<stdio.h>
+#include<stdlib.h>
+#include<errno.h>
+#include<fcntl.h>
+#include<string.h>

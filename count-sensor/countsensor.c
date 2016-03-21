@@ -1,0 +1,75 @@
+#include <linux/init.h>
+#include <linux/module.h>
+#include <linux/kernel.h>
+#include <linux/gpio.h>
+#include <linux/interrupt.h>
+
+MODULE_LICENSE("GPL");
+MODULE_AUTHOR("Giovanni Bauermeister");
+MODULE_DESCRIPTION("A Counter Sensor Kernel Module");
+MODULE_VERSION("0.1");
+
+static unsigned int gpioSensor = 39; //SODIMM_55
+static unsigned int irqNumber;
+static unsigned int sensorCounter = 0;
+
+static irq_handler_t  gpiosensor_irq_handler(unsigned int irq, void *dev_id, struct pt_regs *regs);
+
+static int __init gpiosensor_init(void){
+	int result = 0;
+	printk(KERN_INFO "COUNT_SENSOR: Initializing the COUNT_SENSOR LKM\n");
+	if (!gpio_is_valid(gpioSensor))
+	{
+		printk(KERN_INFO "COUNT_SENSOR: Invalid SENSOR GPIO\n");
+		return -ENODEV;
+	}
+	
+	gpio_request(gpioSensor, "sysfs");
+	gpio_direction_input(gpioSensor);
+	//gpio_set_debounce(gpioSensor, 200);
+	gpio_export(gpioSensor, false);
+	
+	printk(KERN_INFO "COUNT_SENSOR: The sensor state is currently: %d\n", gpio_get_value(gpioSensor));
+	irqNumber = gpio_to_irq(gpioSensor);
+	printk(KERN_INFO "COUNT_SENSOR: The sensor is mapped to IRQ: %d\n", irqNumber);
+	
+	result = request_irq(irqNumber,
+						(irq_handler_t) gpiosensor_irq_handler, 
+						IRQF_TRIGGER_RISING,
+						"count_sensor_gpio_handler",
+						NULL);
+	printk(KERN_INFO "COUNT_SENSOR: The interrupt request result is: %d\n", result);
+	return result;
+}
+
+static void __exit gpiosensor_exit(void)
+{
+	printk(KERN_INFO "COUNT_SENSOR: The sensor state is currently: %d\n", gpio_get_value(gpioSensor));
+	printk(KERN_INFO "COUNT_SENSOR: The sensor counted %d pieces\n", sensorCounter);
+	free_irq(irqNumber, NULL);
+	gpio_unexport(gpioSensor);
+	gpio_free(gpioSensor);
+	printk(KERN_INFO "COUNT_SENSOR: Count Sensor LKM unloaded!\n");
+}
+
+static irq_handler_t gpiosensor_irq_handler(unsigned int irq, void *dev_id, struct pt_regs *regs)
+{
+	printk(KERN_INFO "COUNT_SENSOR: Interrupt! Sensor state is %d\n", gpio_get_value(gpioSensor));
+	sensorCounter++;
+	printk(KERN_INFO "COUNT_SENSOR: The sensor counted %d pieces\n", sensorCounter);
+	return (irq_handler_t) IRQ_HANDLED;
+}
+
+module_init(gpiosensor_init);
+module_exit(gpiosensor_exit);
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
